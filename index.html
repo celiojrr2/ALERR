@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Célio — Procurador ALERR · Dashboard de Estudos</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f3ef;
+    --surface: #ffffff;
+    --surface-2: #f9f8f5;
+    --border: rgba(11,11,11,0.1);
+    --border-strong: rgba(11,11,11,0.2);
+    --text: #0b0b0b;
+    --text-sec: #52514e;
+    --text-muted: #898781;
+    --blue-dk: #042C53;
+    --blue-md: #185FA5;
+    --blue-lt: #E6F1FB;
+    --green-dk: #173404;
+    --green-md: #3B6D11;
+    --green-lt: #EAF3DE;
+    --amber-dk: #412402;
+    --amber-md: #BA7517;
+    --amber-lt: #FAEEDA;
+    --red-dk: #501313;
+    --red-md: #A32D2D;
+    --red-lt: #FCEBEB;
+    --pink-lt: #FBEAF0;
+    --pink-dk: #4B1528;
+    --radius: 8px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--blue-dk);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header h1 { font-size: 17px; font-weight: 500; margin-bottom: 2px; }
+  .header p { font-size: 11px; opacity: .7; }
+  .prova-badge {
+    background: #E24B4A;
+    color: #FCEBEB;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .dias-restantes { font-size: 10px; opacity: .7; margin-top: 3px; text-align: center; }
+
+  /* TABS */
+  .tabs {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: .6rem 1.5rem .5rem;
+    display: flex;
+    gap: 4px;
+    position: sticky;
+    top: 68px;
+    z-index: 99;
+  }
+  .tab {
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-sec);
+    font-family: inherit;
+    transition: background .15s, color .15s;
+  }
+  .tab:hover { background: var(--surface-2); }
+  .tab.active { background: var(--blue-dk); color: #fff; }
+
+  /* MAIN CONTENT */
+  .main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1.5rem 3rem; }
+
+  /* METRIC CARDS */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  .metric {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: .75rem 1rem;
+  }
+  .metric-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .metric-val { font-size: 24px; font-weight: 500; }
+  .metric-sub { font-size: 11px; color: var(--text-sec); margin-top: 2px; }
+  .metric.blue .metric-val { color: var(--blue-md); }
+  .metric.green .metric-val { color: var(--green-md); }
+  .metric.amber .metric-val { color: var(--amber-md); }
+  .metric.red .metric-val { color: var(--red-md); }
+
+  /* PROGRESS */
+  .prog-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .prog-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-sec); margin-bottom: 6px; }
+  .prog-track { background: var(--blue-lt); border-radius: 4px; height: 8px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 4px; background: var(--blue-md); transition: width .5s ease; }
+
+  /* SECTION TITLE */
+  .sec-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: .75rem;
+  }
+
+  /* CRONOGRAMA */
+  .cronograma {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 700px) {
+    .cronograma { grid-template-columns: repeat(2, 1fr); }
+  }
+  .dia-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: .6rem .5rem;
+  }
+  .dia-header {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: .5rem;
+    text-align: center;
+  }
+  .dia-card.hoje { border-color: var(--blue-md); border-width: 1.5px; }
+  .dia-card.hoje .dia-header { color: var(--blue-md); }
+  .bloco {
+    border-radius: 5px;
+    padding: 4px 6px;
+    font-size: 10px;
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+  .b-lei { background: var(--blue-lt); color: var(--blue-dk); }
+  .b-jur { background: var(--green-lt); color: var(--green-dk); }
+  .b-exe { background: var(--amber-lt); color: var(--amber-dk); }
+  .b-sim { background: var(--pink-lt); color: var(--pink-dk); }
+  .tempo { font-size: 9px; color: var(--text-muted); display: block; margin-top: 2px; }
+
+  /* CHART */
+  .chart-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .chart-card h3 { font-size: 13px; font-weight: 500; margin-bottom: .75rem; color: var(--text-sec); }
+
+  /* LEGENDA */
+  .legenda {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  /* DISC TABLE */
+  .disc-table {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .disc-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 110px 70px 80px;
+    align-items: center;
+    gap: 8px;
+    padding: .6rem 1rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+  @media (max-width: 700px) {
+    .disc-row { grid-template-columns: 1fr 80px 80px; }
+    .disc-row .hide-mobile { display: none; }
+  }
+  .disc-row:last-child { border-bottom: none; }
+  .disc-row.header {
+    background: var(--surface-2);
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .disc-name { font-size: 13px; font-weight: 500; }
+  .disc-qs { font-size: 10px; color: var(--text-sec); }
+  .status-btn {
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-family: inherit;
+    font-weight: 500;
+    transition: opacity .15s;
+    width: 100%;
+    text-align: center;
+  }
+  .status-btn:hover { opacity: .8; }
+  .s-ok { background: var(--green-lt); color: var(--green-md); }
+  .s-pend { background: var(--amber-lt); color: var(--amber-md); }
+  .s-nd { background: var(--surface-2); color: var(--text-muted); border: 0.5px solid var(--border); }
+  .acc-pct { font-size: 13px; font-weight: 500; text-align: right; }
+
+  /* FILTROS */
+  .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: .75rem; }
+  .filtro-btn {
+    border: 0.5px solid var(--border-strong);
+    background: var(--surface);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-sec);
+    font-family: inherit;
+    transition: background .15s;
+  }
+  .filtro-btn:hover { background: var(--surface-2); }
+  .filtro-btn.ativo { background: var(--blue-dk); color: #fff; border-color: var(--blue-dk); }
+
+  /* ADD QUESTÃO */
+  .add-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    margin-bottom: 1rem;
+  }
+  .add-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .fld { display: flex; flex-direction: column; gap: 4px; }
+  .fld label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .fld select, .fld input[type="number"], .fld input[type="text"] {
+    border: 0.5px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+  }
+  .fld select:focus, .fld input:focus { border-color: var(--blue-md); }
+  .btn-primary {
+    background: var(--blue-dk);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background .15s;
+  }
+  .btn-primary:hover { background: var(--blue-md); }
+  .btn-danger {
+    background: transparent;
+    color: var(--red-md);
+    border: 0.5px solid var(--red-md);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-danger:hover { background: var(--red-lt); }
+
+  /* LOG TABLE */
+  .log-table {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .log-row {
+    display: grid;
+    grid-template-columns: 1fr 65px 65px 65px 80px 32px;
+    align-items: center;
+    gap: 6px;
+    padding: .55rem 1rem;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 12px;
+  }
+  @media (max-width: 700px) {
+    .log-row { grid-template-columns: 1fr 55px 55px 55px 32px; }
+    .log-row .hide-mobile { display: none; }
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-row.header {
+    background: var(--surface-2);
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .empty-msg { padding: 1.5rem 1rem; color: var(--text-muted); font-size: 12px; }
+
+  /* EXPORT/IMPORT */
+  .actions-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: .75rem 1rem;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    align-items: center;
+  }
+  .actions-row span { font-size: 12px; color: var(--text-sec); flex: 1; }
+  .btn-sec {
+    background: var(--surface-2);
+    color: var(--text-sec);
+    border: 0.5px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s;
+  }
+  .btn-sec:hover { background: var(--bg); }
+
+  /* ALERT */
+  .alert {
+    padding: .6rem 1rem;
+    border-radius: 8px;
+    font-size: 12px;
+    margin-bottom: .75rem;
+    display: none;
+  }
+  .alert.success { background: var(--green-lt); color: var(--green-md); }
+  .alert.error { background: var(--red-lt); color: var(--red-md); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <h1>📋 Célio Junior — Procurador ALERR</h1>
+    <p>FCC · 100 questões obj. + subjetiva + oral · 3h por dia</p>
+  </div>
+  <div>
+    <div class="prova-badge">🗓 Prova: 28/06/2026</div>
+    <div class="dias-restantes" id="dias-label">—</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="setTab('cronograma',this)">Cronograma</button>
+  <button class="tab" onclick="setTab('disciplinas',this)">Disciplinas</button>
+  <button class="tab" onclick="setTab('questoes',this)">Questões</button>
+  <button class="tab" onclick="setTab('dados',this)">Dados</button>
+</div>
+
+<div class="main">
+
+  <!-- MÉTRICAS (sempre visíveis) -->
+  <div class="metrics">
+    <div class="metric blue">
+      <div class="metric-label">Lei seca concluída</div>
+      <div class="metric-val" id="m-lei">0/14</div>
+      <div class="metric-sub">disciplinas estudadas</div>
+    </div>
+    <div class="metric green">
+      <div class="metric-label">Questões feitas</div>
+      <div class="metric-val" id="m-qs">0</div>
+      <div class="metric-sub">total acumulado</div>
+    </div>
+    <div class="metric amber">
+      <div class="metric-label">Taxa de acerto</div>
+      <div class="metric-val" id="m-acerto">—</div>
+      <div class="metric-sub">média geral</div>
+    </div>
+    <div class="metric red">
+      <div class="metric-label">Pendentes</div>
+      <div class="metric-val" id="m-pend">14</div>
+      <div class="metric-sub">lei seca p/ fazer</div>
+    </div>
+  </div>
+
+  <div class="prog-card">
+    <div class="prog-header">
+      <span>Progresso geral (lei seca)</span>
+      <span id="prog-pct">0%</span>
+    </div>
+    <div class="prog-track">
+      <div class="prog-fill" id="prog-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div id="alert-box" class="alert"></div>
+
+  <!-- TAB: CRONOGRAMA -->
+  <div id="tab-cronograma">
+    <div class="sec-title">Cronograma semanal — 3h por dia</div>
+    <div class="cronograma" id="cronograma-grid"></div>
+
+    <div class="legenda">
+      <span class="bloco b-lei" style="font-size:11px">📖 Lei seca / leitura</span>
+      <span class="bloco b-jur" style="font-size:11px">⚖️ Jurisprudência / discursivas</span>
+      <span class="bloco b-exe" style="font-size:11px">❓ Exercícios</span>
+      <span class="bloco b-sim" style="font-size:11px">🎯 Simulado</span>
+    </div>
+
+    <div class="chart-card">
+      <h3>Peso de cada disciplina na prova objetiva (100 questões)</h3>
+      <div style="position:relative;width:100%;height:320px">
+        <canvas id="chart-pesos" role="img" aria-label="Distribuição de questões por disciplina no edital ALERR"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: DISCIPLINAS -->
+  <div id="tab-disciplinas" style="display:none">
+    <div class="sec-title">Status por disciplina — clique no botão para alternar</div>
+    <div class="filtros">
+      <button class="filtro-btn ativo" onclick="filtrarDisc('todas',this)">Todas</button>
+      <button class="filtro-btn" onclick="filtrarDisc('pendente',this)">Pendente</button>
+      <button class="filtro-btn" onclick="filtrarDisc('ok',this)">Concluídas</button>
+    </div>
+    <div class="disc-table" id="disc-table">
+      <div class="disc-row header">
+        <span>Disciplina</span>
+        <span>Lei seca</span>
+        <span>Jurisprudência</span>
+        <span class="hide-mobile">Questões</span>
+        <span>% acerto</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: QUESTÕES -->
+  <div id="tab-questoes" style="display:none">
+    <div class="sec-title">Registrar sessão de estudos</div>
+    <div class="add-card">
+      <div class="add-row">
+        <div class="fld">
+          <label>Disciplina</label>
+          <select id="q-disc" style="min-width:200px"></select>
+        </div>
+        <div class="fld">
+          <label>Questões feitas</label>
+          <input type="number" id="q-feitas" min="1" max="300" value="30" style="width:80px">
+        </div>
+        <div class="fld">
+          <label>Acertos</label>
+          <input type="number" id="q-acertos" min="0" max="300" value="21" style="width:80px">
+        </div>
+        <div class="fld">
+          <label>Fonte</label>
+          <select id="q-fonte" style="min-width:140px">
+            <option>QConcursos</option>
+            <option>TEC</option>
+            <option>Vade Mecum Q</option>
+            <option>Simulado</option>
+            <option>FCC Prova Anterior</option>
+            <option>ChatGPT / IA</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Data</label>
+          <input type="text" id="q-data" style="width:100px" placeholder="hoje">
+        </div>
+        <button class="btn-primary" onclick="addQuestao()">+ Registrar</button>
+      </div>
+    </div>
+
+    <div class="sec-title">Histórico de sessões</div>
+    <div class="log-table" id="log-table">
+      <div class="log-row header">
+        <span>Disciplina</span>
+        <span>Feitas</span>
+        <span>Acertos</span>
+        <span>%</span>
+        <span class="hide-mobile">Fonte</span>
+        <span></span>
+      </div>
+      <div id="log-body"></div>
+    </div>
+  </div>
+
+  <!-- TAB: DADOS -->
+  <div id="tab-dados" style="display:none">
+    <div class="sec-title">Exportar e importar dados</div>
+    <div class="actions-row">
+      <span>Salve um backup dos seus dados ou restaure de um arquivo anterior.</span>
+      <button class="btn-sec" onclick="exportarDados()">⬇ Exportar JSON</button>
+      <button class="btn-sec" onclick="document.getElementById('import-file').click()">⬆ Importar JSON</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDados(event)">
+    </div>
+
+    <div class="sec-title">Resumo por disciplina</div>
+    <div class="log-table">
+      <div class="log-row header" style="grid-template-columns:1fr 70px 70px 70px">
+        <span>Disciplina</span>
+        <span>Feitas</span>
+        <span>Acertos</span>
+        <span>%</span>
+      </div>
+      <div id="resumo-body"></div>
+    </div>
+
+    <div style="margin-top:1.5rem;padding:1rem;background:var(--surface);border:0.5px solid var(--border);border-radius:10px;">
+      <div class="sec-title">Resetar todos os dados</div>
+      <p style="font-size:12px;color:var(--text-sec);margin-bottom:.75rem">Apaga todo o progresso. Esta ação não pode ser desfeita.</p>
+      <button class="btn-danger" onclick="resetarDados()">🗑 Apagar tudo</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── DADOS ──────────────────────────────────────────────────────────────────
+const DISCIPLINAS = [
+  {nome:"Direito Constitucional",       qs:8,  cod:"const"},
+  {nome:"Direito Financeiro",            qs:8,  cod:"fin"},
+  {nome:"Direito Administrativo",        qs:8,  cod:"adm"},
+  {nome:"Direito Tributário",            qs:8,  cod:"trib"},
+  {nome:"Direito Eleitoral",             qs:8,  cod:"eleit"},
+  {nome:"Direito Processual Civil",      qs:8,  cod:"pc"},
+  {nome:"Direito Processual Penal",      qs:8,  cod:"pp"},
+  {nome:"RI ALE-RR (Res. 08/2023)",     qs:8,  cod:"ri"},
+  {nome:"Direito Previdenciário",        qs:6,  cod:"prev"},
+  {nome:"Direito Ambiental",             qs:6,  cod:"amb"},
+  {nome:"Direito Penal",                 qs:6,  cod:"pen"},
+  {nome:"Direito Civil e Empresarial",   qs:6,  cod:"civ"},
+  {nome:"Direito do Trabalho",           qs:6,  cod:"trab"},
+  {nome:"D. Processual do Trabalho",     qs:6,  cod:"pt"},
+];
+
+const SEMANA = [
+  {dia:"Seg", blocos:[
+    {tipo:"b-lei", txt:"📖 D. Constitucional\nConst. Roraima + RI", tempo:"1h30"},
+    {tipo:"b-exe", txt:"❓ 40 questões\nD. Constitucional", tempo:"1h"},
+    {tipo:"b-jur", txt:"⚖️ Discursivas\ntopificar", tempo:"30min"},
+  ]},
+  {dia:"Ter", blocos:[
+    {tipo:"b-lei", txt:"📖 D. Administrativo\nLINDB + lei 14.133", tempo:"1h30"},
+    {tipo:"b-exe", txt:"❓ 40 questões\nD. Administrativo", tempo:"1h"},
+    {tipo:"b-jur", txt:"⚖️ Jurisprudência\nDOD · resp. civil", tempo:"30min"},
+  ]},
+  {dia:"Qua", blocos:[
+    {tipo:"b-lei", txt:"📖 D. Financeiro\nLRF + Lei 4.320", tempo:"1h30"},
+    {tipo:"b-exe", txt:"❓ 40 questões\nD. Financeiro", tempo:"1h"},
+    {tipo:"b-jur", txt:"⚖️ Discursivas\nprecatórios", tempo:"30min"},
+  ]},
+  {dia:"Qui", blocos:[
+    {tipo:"b-lei", txt:"📖 D. Tributário\nCTN + CTE-RR", tempo:"1h30"},
+    {tipo:"b-exe", txt:"❓ 40 questões\nD. Tributário", tempo:"1h"},
+    {tipo:"b-jur", txt:"⚖️ Jurisprudência\nDOD · tributário", tempo:"30min"},
+  ]},
+  {dia:"Sex", blocos:[
+    {tipo:"b-lei", txt:"📖 D. Eleitoral\nCód. Eleit. + LC 64", tempo:"1h30"},
+    {tipo:"b-exe", txt:"❓ 30 questões\nD. Eleitoral", tempo:"1h"},
+    {tipo:"b-jur", txt:"⚖️ Discursivas\nD. Eleitoral", tempo:"30min"},
+  ]},
+  {dia:"Sáb", blocos:[
+    {tipo:"b-lei", txt:"📖 D. Proc. Civil\nCPC arts. chave", tempo:"1h30"},
+    {tipo:"b-exe", txt:"❓ 40 questões\nD. Proc. Civil", tempo:"1h"},
+    {tipo:"b-jur", txt:"⚖️ Jurisprudência\nSTJ · processo", tempo:"30min"},
+  ]},
+  {dia:"Dom", blocos:[
+    {tipo:"b-sim", txt:"🎯 Simulado\n100 questões aleatório", tempo:"2h"},
+    {tipo:"b-jur", txt:"⚖️ Revisão de erros\ncaderno de erros", tempo:"1h"},
+  ]},
+];
+
+const KEY = "alerr_celio_v3";
+let state = { leis: {}, jurs: {}, sessoes: [] };
+
+function load() {
+  try {
+    const s = localStorage.getItem(KEY);
+    if (s) state = JSON.parse(s);
+  } catch(e) {}
+}
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+load();
+
+// ─── STATUS ─────────────────────────────────────────────────────────────────
+function getStatus(cod, tipo) {
+  return state[tipo] ? (state[tipo][cod] || "nd") : "nd";
+}
+
+function cicloStatus(cod, tipo) {
+  const cur = getStatus(cod, tipo);
+  const next = cur === "nd" ? "pendente" : cur === "pendente" ? "estudado" : "nd";
+  if (!state[tipo]) state[tipo] = {};
+  state[tipo][cod] = next;
+  save();
+  render();
+}
+
+function statusLabel(s) {
+  return s === "estudado" ? "✓ Estudado" : s === "pendente" ? "⏳ Pendente" : "— N/D";
+}
+
+function statusClass(s) {
+  return s === "estudado" ? "s-ok" : s === "pendente" ? "s-pend" : "s-nd";
+}
+
+// ─── MÉTRICAS ───────────────────────────────────────────────────────────────
+function calcMetrics() {
+  let lei = 0, pend = 0, totalQ = 0, totalA = 0;
+  DISCIPLINAS.forEach(d => {
+    if (getStatus(d.cod, "leis") === "estudado") lei++;
+    else pend++;
+  });
+  state.sessoes.forEach(s => { totalQ += s.feitas; totalA += s.acertos; });
+  return { lei, pend, totalQ, totalA };
+}
+
+function getQData(cod) {
+  let f = 0, a = 0;
+  state.sessoes.filter(s => s.cod === cod).forEach(s => { f += s.feitas; a += s.acertos; });
+  return { f, a };
+}
+
+// ─── COUNTDOWN ──────────────────────────────────────────────────────────────
+function updateDias() {
+  const prova = new Date("2026-06-28T08:00:00");
+  const now = new Date();
+  const diff = Math.ceil((prova - now) / (1000 * 60 * 60 * 24));
+  const el = document.getElementById("dias-label");
+  if (el) el.textContent = diff > 0 ? diff + " dias restantes" : diff === 0 ? "Prova hoje!" : "Prova realizada";
+}
+
+// ─── CRONOGRAMA ─────────────────────────────────────────────────────────────
+function buildCronograma() {
+  const grid = document.getElementById("cronograma-grid");
+  if (!grid) return;
+  const hoje = new Date().getDay(); // 0=dom,1=seg...
+  const diasMap = {1:"Seg",2:"Ter",3:"Qua",4:"Qui",5:"Sex",6:"Sáb",0:"Dom"};
+  const diaHoje = diasMap[hoje];
+  grid.innerHTML = "";
+  SEMANA.forEach(d => {
+    const card = document.createElement("div");
+    card.className = "dia-card" + (d.dia === diaHoje ? " hoje" : "");
+    let html = `<div class="dia-header">${d.dia}${d.dia === diaHoje ? " ◀" : ""}</div>`;
+    d.blocos.forEach(b => {
+      html += `<div class="bloco ${b.tipo}">${b.txt.replace(/\n/g,"<br>")}<span class="tempo">⏱ ${b.tempo}</span></div>`;
+    });
+    card.innerHTML = html;
+    grid.appendChild(card);
+  });
+}
+
+// ─── CHART ──────────────────────────────────────────────────────────────────
+let chartInstance = null;
+function buildChart() {
+  const canvas = document.getElementById("chart-pesos");
+  if (!canvas) return;
+  if (chartInstance) { chartInstance.destroy(); }
+  const labels = DISCIPLINAS.map(d => d.nome.replace("Direito ", "D. ").replace("D. Civil e Empresarial","D. Civil/Emp.").replace("D. Processual do Trabalho","D. Proc. Trab."));
+  const data = DISCIPLINAS.map(d => d.qs);
+  const colors = data.map(v => v === 8 ? "#185FA5" : "#3B6D11");
+  chartInstance = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Questões",
+        data,
+        backgroundColor: colors,
+        borderRadius: 4,
+        borderSkipped: "start",
+        barPercentage: .75,
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => " " + ctx.parsed.x + " questões na prova" } }
+      },
+      scales: {
+        x: { grid: { color: "rgba(11,11,11,.06)" }, ticks: { stepSize: 1, font: { size: 11 } }, max: 10 },
+        y: { ticks: { font: { size: 10 }, color: "#52514e" } }
+      }
+    }
+  });
+}
+
+// ─── DISCIPLINAS TAB ────────────────────────────────────────────────────────
+let filtroAtivo = "todas";
+function filtrarDisc(f, btn) {
+  filtroAtivo = f;
+  document.querySelectorAll(".filtro-btn").forEach(b => b.classList.remove("ativo"));
+  btn.classList.add("ativo");
+  renderDiscs();
+}
+
+function renderDiscs() {
+  const tb = document.getElementById("disc-table");
+  if (!tb) return;
+  while (tb.children.length > 1) tb.removeChild(tb.lastChild);
+
+  DISCIPLINAS.forEach(d => {
+    const lS = getStatus(d.cod, "leis");
+    const jS = getStatus(d.cod, "jurs");
+    if (filtroAtivo === "pendente" && lS === "estudado" && jS === "estudado") return;
+    if (filtroAtivo === "ok" && !(lS === "estudado" && jS === "estudado")) return;
+
+    const qd = getQData(d.cod);
+    const pct = qd.f > 0 ? Math.round(qd.a / qd.f * 100) : null;
+    const pctColor = pct === null ? "var(--text-muted)" : pct >= 60 ? "var(--green-md)" : pct >= 40 ? "var(--amber-md)" : "var(--red-md)";
+
+    const row = document.createElement("div");
+    row.className = "disc-row";
+    row.innerHTML = `
+      <span>
+        <div class="disc-name">${d.nome}</div>
+        <div class="disc-qs">${d.qs} questões na prova</div>
+      </span>
+      <span>
+        <button class="status-btn ${statusClass(lS)}" onclick="cicloStatus('${d.cod}','leis')">${statusLabel(lS)}</button>
+      </span>
+      <span>
+        <button class="status-btn ${statusClass(jS)}" onclick="cicloStatus('${d.cod}','jurs')">${statusLabel(jS)}</button>
+      </span>
+      <span class="hide-mobile" style="font-size:12px;color:var(--text-sec)">${qd.f > 0 ? qd.f + " q" : "—"}</span>
+      <span class="acc-pct" style="color:${pctColor}">${pct !== null ? pct + "%" : "—"}</span>
+    `;
+    tb.appendChild(row);
+  });
+}
+
+// ─── QUESTÕES TAB ───────────────────────────────────────────────────────────
+function populateSelect() {
+  const sel = document.getElementById("q-disc");
+  if (!sel || sel.options.length > 1) return;
+  DISCIPLINAS.forEach(d => {
+    const o = document.createElement("option");
+    o.value = d.cod;
+    o.textContent = d.nome;
+    sel.appendChild(o);
+  });
+  const hoje = new Date();
+  document.getElementById("q-data").value = hoje.toLocaleDateString("pt-BR");
+}
+
+function addQuestao() {
+  const cod = document.getElementById("q-disc").value;
+  const feitas = parseInt(document.getElementById("q-feitas").value) || 0;
+  const acertos = parseInt(document.getElementById("q-acertos").value) || 0;
+  const fonte = document.getElementById("q-fonte").value;
+  const data = document.getElementById("q-data").value || new Date().toLocaleDateString("pt-BR");
+
+  if (feitas <= 0) { showAlert("Informe a quantidade de questões feitas.", "error"); return; }
+  if (acertos < 0 || acertos > feitas) { showAlert("Acertos não pode ser maior que questões feitas.", "error"); return; }
+
+  state.sessoes.push({ cod, feitas, acertos, fonte, data });
+  save();
+  render();
+  showAlert("Sessão registrada com sucesso!", "success");
+}
+
+function removerSessao(idx) {
+  if (!confirm("Remover esta sessão?")) return;
+  state.sessoes.splice(idx, 1);
+  save();
+  render();
+}
+
+function renderLog() {
+  const body = document.getElementById("log-body");
+  if (!body) return;
+  body.innerHTML = "";
+  if (state.sessoes.length === 0) {
+    body.innerHTML = '<div class="empty-msg">Nenhuma sessão registrada ainda. Use o formulário acima para adicionar.</div>';
+    return;
+  }
+  const rev = [...state.sessoes].map((s, i) => ({ ...s, idx: i })).reverse();
+  rev.forEach(s => {
+    const pct = Math.round(s.acertos / s.feitas * 100);
+    const c = pct >= 60 ? "var(--green-md)" : pct >= 40 ? "var(--amber-md)" : "var(--red-md)";
+    const disc = DISCIPLINAS.find(d => d.cod === s.cod);
+    const row = document.createElement("div");
+    row.className = "log-row";
+    row.innerHTML = `
+      <span>${disc ? disc.nome : s.cod}<br><span style="font-size:10px;color:var(--text-muted)">${s.data || ""}</span></span>
+      <span>${s.feitas}</span>
+      <span>${s.acertos}</span>
+      <span style="font-weight:500;color:${c}">${pct}%</span>
+      <span class="hide-mobile" style="color:var(--text-muted);font-size:11px">${s.fonte || ""}</span>
+      <span><button class="btn-danger" onclick="removerSessao(${s.idx})" title="Remover">✕</button></span>
+    `;
+    body.appendChild(row);
+  });
+}
+
+// ─── DADOS TAB ──────────────────────────────────────────────────────────────
+function renderResumo() {
+  const body = document.getElementById("resumo-body");
+  if (!body) return;
+  body.innerHTML = "";
+  DISCIPLINAS.forEach(d => {
+    const qd = getQData(d.cod);
+    if (qd.f === 0) return;
+    const pct = Math.round(qd.a / qd.f * 100);
+    const c = pct >= 60 ? "var(--green-md)" : pct >= 40 ? "var(--amber-md)" : "var(--red-md)";
+    const row = document.createElement("div");
+    row.className = "log-row";
+    row.style.gridTemplateColumns = "1fr 70px 70px 70px";
+    row.innerHTML = `
+      <span>${d.nome}</span>
+      <span>${qd.f}</span>
+      <span>${qd.a}</span>
+      <span style="font-weight:500;color:${c}">${pct}%</span>
+    `;
+    body.appendChild(row);
+  });
+  if (!body.children.length) {
+    body.innerHTML = '<div class="empty-msg">Nenhuma questão registrada ainda.</div>';
+  }
+}
+
+function exportarDados() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "alerr_celio_backup_" + new Date().toISOString().slice(0, 10) + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+  showAlert("Backup exportado com sucesso!", "success");
+}
+
+function importarDados(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.sessoes || !imported.leis) throw new Error("Formato inválido");
+      state = imported;
+      save();
+      render();
+      showAlert("Dados importados com sucesso!", "success");
+    } catch(err) {
+      showAlert("Erro ao importar: arquivo inválido.", "error");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+function resetarDados() {
+  if (!confirm("Tem certeza? Todos os dados serão apagados permanentemente.")) return;
+  state = { leis: {}, jurs: {}, sessoes: [] };
+  save();
+  render();
+  showAlert("Dados resetados.", "success");
+}
+
+// ─── ALERT ──────────────────────────────────────────────────────────────────
+function showAlert(msg, tipo) {
+  const el = document.getElementById("alert-box");
+  el.textContent = msg;
+  el.className = "alert " + tipo;
+  el.style.display = "block";
+  setTimeout(() => { el.style.display = "none"; }, 3000);
+}
+
+// ─── TABS ───────────────────────────────────────────────────────────────────
+const TABS = ["cronograma", "disciplinas", "questoes", "dados"];
+function setTab(t, btn) {
+  TABS.forEach(id => {
+    document.getElementById("tab-" + id).style.display = id === t ? "block" : "none";
+  });
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  if (t === "cronograma") setTimeout(buildChart, 50);
+  if (t === "dados") renderResumo();
+}
+
+// ─── RENDER PRINCIPAL ────────────────────────────────────────────────────────
+function render() {
+  const m = calcMetrics();
+  document.getElementById("m-lei").textContent = m.lei + "/14";
+  document.getElementById("m-qs").textContent = m.totalQ.toLocaleString("pt-BR");
+  document.getElementById("m-pend").textContent = m.pend;
+  const pct = m.totalQ > 0 ? Math.round(m.totalA / m.totalQ * 100) : null;
+  document.getElementById("m-acerto").textContent = pct !== null ? pct + "%" : "—";
+  const prog = Math.round(m.lei / 14 * 100);
+  document.getElementById("prog-pct").textContent = prog + "%";
+  document.getElementById("prog-fill").style.width = prog + "%";
+  renderDiscs();
+  renderLog();
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+updateDias();
+setInterval(updateDias, 60000);
+buildCronograma();
+populateSelect();
+render();
+setTimeout(buildChart, 100);
+</script>
+</body>
+</html>
